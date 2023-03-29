@@ -1,8 +1,10 @@
 from urllib.request import urlopen
 import io
+import logging
 from hashlib import md5
 from time import localtime
-
+from botocore.exceptions import ClientError
+import os
 
 def get_objects(aws_s3_client, bucket_name) -> str:
   for key in aws_s3_client.list_objects(Bucket=bucket_name)['Contents']:
@@ -29,12 +31,12 @@ def download_file_and_upload_to_s3(aws_s3_client,
                                                        bucket_name, file_name)
 
 
-def upload_file(aws_s3_client, filename, bucket_name):
-  response = aws_s3_client.upload_file(filename, bucket_name, "hello.txt")
-  status_code = response["ResponseMetadata"]["HTTPStatusCode"]
-  if status_code == 200:
-    return True
-  return False
+# def upload_file(aws_s3_client, filename, bucket_name):
+#   response = aws_s3_client.upload_file(filename, bucket_name, "hello.txt")
+#   status_code = response["ResponseMetadata"]["HTTPStatusCode"]
+#   if status_code == 200:
+#     return True
+#   return False
 
 
 def upload_file_obj(aws_s3_client, filename, bucket_name):
@@ -47,3 +49,28 @@ def upload_file_put(aws_s3_client, filename, bucket_name):
     aws_s3_client.put_object(Bucket=bucket_name,
                              Key="hello_put.txt",
                              Body=file.read())
+
+# def upload_small_size_file(aws_s3_client, file_path, bucket_name, object_name=None):
+#     if object_name is None:
+#         object_name = file_path
+#     with open(file_path, "rb") as file:
+#       response = aws_s3_client.upload_fileobj(file, bucket_name, object_name)
+#       status_code = response["ResponseMetadata"]["HTTPStatusCode"]
+
+#     if status_code == 200:
+#         print(f"Sucessfully upload file {file_path} to S3 bucket {bucket_name}")
+#     else:
+#         print(f"Failed to upload file {file_path} to S3 bucket {bucket_name}")
+
+def upload_small_size_file(aws_s3_client, file_name, bucket_name, object_name=None):
+    if object_name is None:
+        object_name = os.path.basename(file_name)
+    try:
+        response = aws_s3_client.upload_file(file_name, bucket_name, object_name)
+        # status_code = response["ResponseMetadata"]["HTTPStatusCode"]
+
+        
+    except ClientError as e:
+        logging.error(e)
+        return False
+    return True

@@ -2,8 +2,8 @@ import logging
 from botocore.exceptions import ClientError
 from auth import init_client
 from bucket.crud import list_buckets, create_bucket, delete_bucket, bucket_exists
-from bucket.policy import read_bucket_policy, assign_policy
-from object.crud import download_file_and_upload_to_s3, get_objects
+from bucket.policy import read_bucket_policy, assign_policy, assign_expiration_days
+from object.crud import download_file_and_upload_to_s3, get_objects, upload_small_size_file
 from bucket.encryption import set_bucket_encryption, read_bucket_encryption
 import argparse
 
@@ -60,6 +60,13 @@ parser.add_argument(
     "--bucket_name",
     type=str,
     help="Pass bucket name.",
+    default=None)
+
+parser.add_argument(
+    "-fn",
+    "--file_name",
+    type=str,
+    help="Pass file name.",
     default=None)
 
 parser.add_argument(
@@ -130,6 +137,16 @@ parser.add_argument(
     default="False")
 
 parser.add_argument(
+    "-aed",
+    "--assign_expiration_days",
+    help="flag to assign expiration days bucket policy.",
+    choices=["False", "True"],
+    type=str,
+    nargs="?",
+    const="True",
+    default="False")
+
+parser.add_argument(
     "-du",
     "--download_upload",
     choices=["False", "True"],
@@ -182,6 +199,12 @@ parser.add_argument(
     const="True",
     default="False")
 
+parser.add_argument(
+    "-usf",
+    "--upload_small_file",
+    type=str,
+    help="Upload small file",
+    default=None)
 
 def main():
     s3_client = init_client()
@@ -228,6 +251,20 @@ def main():
 
         if (args.list_objects == "True"):
             get_objects(s3_client, args.bucket_name)
+
+
+        if args.upload_small_file:
+           status = upload_small_size_file(s3_client, args.upload_small_file, args.bucket_name)
+           
+           if status:
+                print(f"Sucessfully upload file {args.upload_small_file} to S3 bucket {args.bucket_name}")
+           else:
+                print(f"Failed to upload file {args.upload_small_file} to S3 bucket {args.bucket_name}")
+
+        if args.file_name:
+            if args.assign_expiration_days == "True":
+                assign_expiration_days(s3_client, args.bucket_name)
+
 
     if (args.list_buckets):
         buckets = list_buckets(s3_client)

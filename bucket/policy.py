@@ -1,5 +1,5 @@
 import json
-
+from datetime import datetime, timedelta
 
 def public_read_policy(bucket_name):
   policy = {
@@ -60,3 +60,24 @@ def read_bucket_policy(aws_s3_client, bucket_name):
   if status_code == 200:
     return policy["Policy"]
   return False
+
+
+def assign_expiration_days(aws_s3_client, bucket_name, days=120):
+
+  expiration_date = datetime.now() + timedelta(days=120)
+  lfc = {
+      "Rules": [
+          {
+              "Expiration": {"Days": days},
+              "Filter": {"Prefix": ""},
+              "Status": "Enabled",
+          }
+      ]
+  }
+  policy = aws_s3_client.put_bucket_lifecycle_configuration(Bucket=bucket_name, LifecycleConfiguration=lfc)
+  status_code = policy["ResponseMetadata"]["HTTPStatusCode"]
+  if status_code == 200:
+    print(policy)
+    return True
+  return False
+  
